@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:13
+    restart: always
+    environment:
+      POSTGRES_DB: user_api_db
+      POSTGRES_USER: user_api_user
+      POSTGRES_PASSWORD: user_api_password # Keep password for consistent access
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck: # ADDED HEALTHCHECK
+      test: ["CMD-SHELL", "pg_isready -U user_api_user -d user_api_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://user_api_user:user_api_password@db:5432/user_api_db?sslmode=disable
+      PORT: 3000
+      ENVIRONMENT: development
+    depends_on:
+      db: # Ensure 'db' starts before 'app'
+        condition: service_healthy # Crucial: Wait until 'db' reports as healthy
+
+volumes:
+  pgdata:
